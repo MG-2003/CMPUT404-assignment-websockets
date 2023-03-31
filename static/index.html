@@ -6,7 +6,7 @@
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Google, Abram Hindle
+        Copyright 2023 Google, Abram Hindle, Mehul Gadhia
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -36,6 +36,10 @@ var H = canvas.height = window.innerHeight-50;
 var wscounter = 0;
 var socket;
 
+// GUI is the same as my Assignment 4
+// Reference: URL: https://github.com/MG-2003/CMPUT404-assignment-ajax/blob/master/static/index.html
+// Author: Mehul Gadhia (myself)
+
 function debug(str) {
     var debugDiv = document.getElementById('debug');
     debugDiv.innerHTML = "" + str;
@@ -45,17 +49,42 @@ debug("Test");
 world = {};
 
 //XXX: TODO Make this prettier!
-function drawCircle(context,entity) {
+// Draw a heart instead of circle
+// Reference: URL: https://stackoverflow.com/a/58333880 Author: Rishab, https://stackoverflow.com/users/11733466/rishab
+function drawHeart(context, entity) {
+    var x = entity["x"];
+    var y = entity["y"];
+    var width = entity["length"];
+    var height = entity["length"];
     with(context) {
-        beginPath();                
-        lineWidth = 3;
-        var x = entity["x"];
-        var y = entity["y"];
-        //moveTo(x,y);
+        beginPath();
+        var curveHeight = height * 0.3;
+        moveTo(x, y + curveHeight);
+        bezierCurveTo(
+            x, y, 
+            x - width / 2, y, 
+            x - width / 2, y + curveHeight
+        );
+        bezierCurveTo(
+            x - width / 2, y + (height + curveHeight) / 2, 
+            x, y + (height + curveHeight) / 2, 
+            x, y + height
+        );
+        bezierCurveTo(
+            x, y + (height + curveHeight) / 2, 
+            x + width / 2, y + (height + curveHeight) / 2, 
+            x + width / 2, y + curveHeight
+        );
+        bezierCurveTo(
+            x + width / 2, y, 
+            x, y, 
+            x, y + curveHeight
+        );
+        closePath();
         fillStyle = entity["colour"];
         strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
-        stroke();                                
+        lineWidth = 3;
+        stroke();
     }
 }
 
@@ -63,8 +92,8 @@ function prepEntity(entity) {
     if (!entity["colour"]) {
         entity["colour"] = "#FF0000";
     }
-    if (!entity["radius"]) {
-        entity["radius"] = 50;
+    if (!entity["length"]) {
+        entity["length"] = 50;
     }
     return entity;
 }
@@ -83,7 +112,7 @@ function renderFrame() {
     clearFrame();
     for (var key in world) {
         var entity = world[key];
-        drawCircle(context,prepEntity(entity));
+        drawHeart(context,prepEntity(entity));
     }
 }
 
@@ -125,6 +154,11 @@ function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just modified!
+    // Reference: URL: https://stackoverflow.com/questions/11508463/javascript-set-object-key-by-variable/11508490#11508490
+    // Author: https://stackoverflow.com/users/206403/gen-eric
+    dataObj = {}
+    dataObj[entity] = data
+    socket.send(JSON.stringify(dataObj))
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -239,21 +273,30 @@ mouse.mouseuppers.push(function(x,y,clicked,e) {
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':'purple',
+                          'length':30});
 });
-
 
 function update() {
     drawFrame();
 }
-
 
 function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
+        debug("Socket opened")
+        // Fetch world and update the current world to match fetched world
+        async function fetchWorldAndUpdate() {
+            let response = await fetch('/world')
+            let res_data = await response.json()
+            console.log(res_data)
+            for(var key in res_data) {
+                world[key] = res_data[key]
+            }
+        }
+        fetchWorldAndUpdate()
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -261,7 +304,15 @@ function wsSetup() {
     socket.onmessage = function(msg) {  
         try {
             debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            //XXX: TODO What are you going to do here?
+            // Recieve data and update current world with data
+            let res_data = JSON.parse(msg.data)
+            for(var key in res_data) {
+                world[key] = res_data[key]
+                console.log(world) //console debugging
+                console.log(Object.keys(world).length) //console debugging
+            }
+            drawNextFrame()
         } catch (e) {
             alert("socket on message: " + e);
         }
@@ -269,9 +320,6 @@ function wsSetup() {
 }
 
 wsSetup();
-
-
-
 
 // 30 frames per second
 setInterval( update, 1000/30.0);
