@@ -20,13 +20,13 @@ pip install -r requirements.txt
 Contributors / Licensing
 ========================
 
-Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle.
+Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle, Mehul Gadhia.
 
 freetests.py is LICENSE'D under a BSD-like license:
 
 From ws4py
 
-Copyright (c) 2011-2014, Sylvain Hellegouarch, Abram Hindle
+Copyright (c) 2011-2023, Sylvain Hellegouarch, Abram Hindle, Mehul Gadhia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -59,3 +59,4 @@ Contributors
 * Mark Galloway
 * Abram Hindle
 * Cole Mackenzie
+* Mehul Gadhia
